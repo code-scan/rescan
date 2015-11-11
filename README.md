@@ -1,4 +1,4 @@
-# rescan
+# Rescan
 Redis Unauthorized Scan
 ##Lib:
 	https://github.com/google/ipaddr-py
