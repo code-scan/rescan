@@ -69,8 +69,8 @@ def main():
 			return extract_target(argv[2])
 		if argv[1]=='-i':
 			port=6379
-			if len(argv)==4:
-				port=int(argv[3])
+			if len(argv)==5:
+				port=int(argv[4])
 			targets = ipaddr.IPv4Network(argv[2])
 			for tar in targets:
 				targetlist.append("%s:%d"%(tar,port))
