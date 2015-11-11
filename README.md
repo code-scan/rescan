@@ -1,6 +1,6 @@
 # Rescan
 Redis Unauthorized Scan
-##Lib
+###Lib
 
 	https://github.com/google/ipaddr-py
 	```shell
@@ -13,7 +13,7 @@ Redis Unauthorized Scan
 	pip install futures
 	```
 	
-##Usage
+###Usage
 
 	python rescan.py -f  inputfile.txt 
 	inputfile.txt Format:
