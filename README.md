@@ -14,9 +14,13 @@ pip install futures
 ```
 
 ##Usage
-
+```shell
 python rescan.py -f  inputfile.txt 
+python rescan.py -i  192.168.1.1/24 -p 6379
+```
 inputfile.txt Format:
+```
  10.14.40.194:6379
  10.14.40.194
-python rescan.py -i  192.168.1.1/24 -p 6379
+```
+
