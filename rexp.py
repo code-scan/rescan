@@ -5,7 +5,7 @@ def send(conn,cmd):
 	try:
 		conn.send(cmd+"\n")
 		recv=conn.recv(5) 
-		conn.close()	
+		#conn.close()	
 		recv=recv.replace("\n",''),
 		return recv
 	except:
