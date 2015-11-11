@@ -1,11 +1,11 @@
 # rescan
 Redis Unauthorized Scan
-Lib:
+#Lib:
 	[ipaddr](https://github.com/google/ipaddr-py)
 	[futures](https://pypi.python.org/pypi/futures)
 	[image]: http://github.com/github.png "github" 
 	
-Usage:
+#Usage:
 	python rescan.py -f  inputfile.txt 
 	inputfile.txt Format:
 		 10.14.40.194:6379
