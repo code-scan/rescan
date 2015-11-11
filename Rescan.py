@@ -36,7 +36,7 @@ def extract_target(inputfile):
 def send_dbsize(conn):
 	try:
 		conn.send("dbsize\n")
-		recv=conn.recv(5)
+		recv=conn.recv(15)
 		conn.close()	
 		recv=recv.replace("\n",''),
 		return recv
@@ -65,7 +65,7 @@ def main():
 	targetlist=[]
 	if len(argv)>2:
 		if argv[1]=='-f':
-			return extract_target(argv[1])
+			return extract_target(argv[2])
 		if argv[1]=='-i':
 			port=6379
 			if len(argv)==4:
