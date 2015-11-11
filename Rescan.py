@@ -32,11 +32,12 @@ def extract_target(inputfile):
 			if len(host)==2:
 				target_list.append("%s:%s"%(host[0],host[1]))
 			elif len(host)==1:
-				target_list.append("%s:6379"%(host[0]))		
+				target_list.append("%s:6379"%(host[0]))	
+		return target_list	
 def send_dbsize(conn):
 	try:
 		conn.send("dbsize\n")
-		recv=conn.recv(15)
+		recv=conn.recv(5) 
 		conn.close()	
 		recv=recv.replace("\n",''),
 		return recv
@@ -82,6 +83,7 @@ if len(argv)<3:
 	exit()
 
 target_list=main()
+
 thread_pool = futures.ThreadPoolExecutor(max_workers=10)
 for i in  thread_pool.map(run_task, target_list):
 	if i!=None:
