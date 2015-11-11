@@ -2,7 +2,14 @@
 Redis Unauthorized Scan
 ##Lib:
 	https://github.com/google/ipaddr-py
+	
+	git clone https://github.com/google/ipaddr-py.git
+	cd ipaddr-py
+	sudo python setup.py install
+	
 	https://pypi.python.org/pypi/futures
+	
+	pip install futures
 	
 ##Usage:
 	python rescan.py -f  inputfile.txt 
