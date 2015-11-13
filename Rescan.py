@@ -1,90 +1,181 @@
 #coding=utf-8
-#author=Cond0r@CodeScan
-import socket
-import threading
-from concurrent import futures
-from  Queue import Queue 
+#author=cond0r
+import urllib2
+import re
+from urllib import unquote
+from urllib import quote
+from binascii import b2a_base64 as base64_encode
+from binascii import a2b_base64 as base64_decode
 from sys import argv
-import ipaddr
+from Queue import Queue
 import sys
-socket.setdefaulttimeout(3)
-data='''
-Lib:
-	https://github.com/google/ipaddr-py
-	https://pypi.python.org/pypi/futures
-	pip install futures
-Usage:
-	python rescan.py -f  inputfile.txt 
-	inputfile.txt:
-		10.14.40.194:6379
-	python rescan.py -i  192.168.1.1/24 -p 6379
-'''
-target_list=[]
+import mthread
+class aizhan:
+	def __init__(self,domain='',mail='',name=''):
+		self.domain=domain
+		self.mail=mail
+		self.name=name
+		self.GetMailByDomain_regx='<a href="/reverse-whois\?q=(.*)&t=emailCode">'
+		self.GetSameDomainByEmailCode_mail='onClick="DisplayAllSitesBox\(\);" value="(.*)" />'
+		self.GetSameDomainByEmailCode_domain='<a target="_blank" class="links" rel="nofollow" href="(.*)">'
+		self.GetRegname_regx='<a href="/reverse-whois\?q=(.*)&t=registrant">'
+		self.GetRegname_List='<a href="/reverse-whois\?q=(.*)&t=registrant">'
+		self.SameDomain=[]
+		self.RegEmail=''
+		self.RegName=''
+		self.RegName_List=[]
+		self.BroDomain=[]
+	def AppendDomain(self,Dlist):
+		for D in Dlist:
+			self.SameDomain.append(D)
+	def AppendBro(self,Dlist):
+		for D in Dlist:
+			if D not in self.BroDomain:
+				#D=D.replace("http://",'').replace("http://",'').replace("/",'')
+				self.BroDomain.append(D)
+	def AppendRegName(self,Rlist):
+		for R in Rlist:
+			if R not in self.RegName_List:
+				self.RegName_List.append(R)
+	def GetDomainFromReglist(self):
+		Domain=[]
+		i=1;
+		for N in self.RegName_List:
+			print i,
+			i+=1
+			dom=self.GetSameDomainByEmailCode(N,3,True)
+			self.AppendBro(dom)
+
+		#return Domain
+	
+	def GetSameDomainByEmailCode(self,emailcode,code=1,appends=False):
+		if code==1:
+			url="http://whois.aizhan.com/reverse-whois?q=%s&t=emailCode"%quote(emailcode)
+		elif code==2:
+			url="http://whois.aizhan.com/reverse-whois?q=%s&t=email"%quote(emailcode)
+		elif code==3:
+			url="http://whois.aizhan.com/reverse-whois?q=%s&t=registrant"%quote(emailcode)
+		#print url
+		data=urllib2.urlopen(url).read()
+		email=re.findall(self.GetSameDomainByEmailCode_mail,data)
+		if len(email)==1:
+			email=email[0]
+		else:
+			email=''
+		domain=re.findall(self.GetSameDomainByEmailCode_domain,data)
+		if len(domain)==0:
+			domain=''
+		if appends:
+			return domain
+		self.AppendDomain(domain)
+		if code==2 or code==1:			
+			self.RegEmail=email		
+		regname_list=re.findall(self.GetRegname_List,data)
+		self.AppendRegName(regname_list)
+		
+	def GetMailByDomain(self):
+		url="http://whois.aizhan.com/reverse-whois?q=%s&t=domain"%self.domain
+		data=urllib2.urlopen(url).read()
+		reg=re.findall(self.GetMailByDomain_regx,data)
+		if len(reg)==1:		
+			reg=unquote(reg[0])
+			self.GetSameDomainByEmailCode(reg)
+		reg_name=re.findall(self.GetRegname_regx,data)
+		if len(reg_name)==1:
+			self.RegName=reg_name[0]
+			self.GetSameDomainByEmailCode(self.RegName,3)
+result=[]
 def stdout( name):
-	scanow ='[*] Scan %s.. '%(name)
+	global result
+	scanow ='[*] Find %s of %d'%(name[0:24],len(result))
 	sys.stdout.write(str(scanow)+" "*20+"\b\b\r")
 	sys.stdout.flush()
-def extract_target(inputfile):
-		global target_list
-		inputdata=open(inputfile).read().replace("\r",'').split("\n")
-		for host in inputdata:
-			host=host.split(":")
-			if len(host)==2:
-				target_list.append("%s:%s"%(host[0],host[1]))
-			elif len(host)==1:
-				target_list.append("%s:6379"%(host[0]))	
-		return target_list	
-def send_dbsize(conn):
-	try:
-		conn.send("dbsize\n")
-		recv=conn.recv(5) 
-		conn.close()	
-		recv=recv.replace("\n",''),
-		return recv
-	except:
-		return False
-	
-def conn_redis(args):
-	client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	args=args.split(":")
-	host=args[0]
-	port=int(args[1])
-	try:
-		client.connect((host, port))
-		return client
-	except:
-		return False
-def run_task(target):
-	stdout(target)
-	conn=conn_redis(target)
-	if conn:
-		size=send_dbsize(conn)
-		size=str(size)
-		if 'NOAUTH' not in size and ':' in size:
-			return  "[!] Find %s Unauthorized  "% target		
-def main():
-	targetlist=[]
-	if len(argv)>2:
-		if argv[1]=='-f':
-			return extract_target(argv[2])
-		if argv[1]=='-i':
-			port=6379
-			if len(argv)==5:
-				port=int(argv[4])
-			targets = ipaddr.IPv4Network(argv[2])
-			for tar in targets:
-				targetlist.append("%s:%d"%(tar,port))
-			return targetlist
-				
-			
+def prints(d):
+	global result,data,over
+	if d=='Ennnnnnd':
+		if over==1:
+			return 0
+		over=1
+		data+="SubDomain\n"
+		for p in result:
+			if p:
+				data+=p+"\n"
+		print "[*] Query Over,Result is in %s.log"	%argv[1]			
+		open('%s.log'%argv[1],'w').write(data)
+		return 1		
 		
-if len(argv)<3:
-	print data
+	for i in d:
+		stdout(i)
+		i=i.replace("http://",'').replace("http://",'').replace("/",'')
+		result.append(i)	
+result_ip=[]		
+def prints_ip(d):
+	global result_ip,data,over
+	if 'Ennnn' not in d:
+		result_ip.append(d)
+	if d=='Ennnnnnd':
+		if over==1:
+			return 0
+		over=1
+		data+="SubDomain\n"
+		for p in result_ip:
+			if p:
+				data+=p+"\n"
+		print "[*] Query Over,Result is in %s.log"	%argv[1]			
+		open('%s.log'%argv[1],'w').write(data)
+		return 1		
+		
+def write_html(dicts):
+	html=""
+	for key,value in dicts.items():
+		#print key,value
+		if value!='':
+			data='''		<li>
+				<div class="link"><i class="fa fa-paint-brush"></i>{Domain}<i class="fa fa-chevron-down"></i></div>
+				<ul class="submenu">
+					{li}
+			</ul>
+			</li>
+			'''.replace("{Domain}",key)
+			li=""
+			
+			for d in value.split(","):	
+				if d:
+					li+='<li><a href="'+d+'">'+d+'</a></li>'
+			data=data.replace("{li}",li)
+			html+=data
+			
+	htmls=open('result_temp.html').read()	
+	htmls=htmls.replace("{html}",html)
+	open(argv[1]+".html",'w').write(htmls)
+over=0
+if len(argv)!=2:
+	print "Usage: python brodomain.py codescan.cn"
 	exit()
-
-target_list=main()
-
-thread_pool = futures.ThreadPoolExecutor(max_workers=10)
-for i in  thread_pool.map(run_task, target_list):
-	if i!=None:
-		print i
+print "[*] Init.."
+query=aizhan(argv[1])
+print "[*] Query Email.."
+query.GetMailByDomain()
+print "[*] Query All Domain Waiting.."
+print "[*] Query ",
+query.GetDomainFromReglist()
+data="Email: %s\nRegistrant: %s\n"%(query.RegEmail,query.RegName)
+data+="BroDmain Count:%d\n"%len(query.BroDomain)
+print "\n[*] BroDmain Count:%d\n"%len(query.BroDomain)
+for D in query.BroDomain:
+	D=D.replace("http://",'').replace("http://",'').replace("/",'')
+	data+=D+"\n"
+m=mthread.run(query.BroDomain,prints)
+print "[*] SubDomain Count:%d"%len(result)
+result_ip=result
+dicts={}
+for Ds in query.BroDomain:
+	Ds=Ds.replace("http://www",'')
+	Ds=Ds.replace("/",'')
+	dicts.update({Ds:''})
+	for D in result_ip:	
+		if Ds in D:
+			data=dicts[Ds]
+			dicts.update({Ds:data+","+D})
+print "[*] Html Result in "+argv[1]+".html"
+write_html(dicts)	
